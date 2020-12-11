@@ -1,0 +1,11 @@
+{
+    "compilerOptions": {
+        "target": "es6",
+        "module": "commonjs",
+        "watch": true,
+        "sourceMap": true,
+        // TypeScriptがJavaScriptに変換されたファイルが保存されるフォルダ名を指定。例として、javascriptとした。
+        // tsconfig.jsonファイルを起点としたパスを指定する
+        "outDir": "javascript"
+    }
+}
