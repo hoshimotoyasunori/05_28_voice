@@ -24,20 +24,42 @@
 
         let localStream;
 
-        // カメラ映像取得
-        navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-            .then(stream => {
-                // 成功時にvideo要素にカメラ映像をセットし、再生
-                const videoElm = document.getElementById('my-video')
-                videoElm.srcObject = stream;
-                videoElm.play();
-                // 着信時に相手にカメラ映像を返せるように、グローバル変数に保存しておく
-                localStream = stream;
-            }).catch(error => {
-                // 失敗時にはエラーログを出力
-                console.error('mediaDevice.getUserMedia() error:', error);
-                return;
-            });
+        const micAudio = new Tone.UserMedia();
+        // マイクがオープンしたときのコールバック関数にgetUserMediaを格納
+        micAudio.open().then(() => {
+            const shifter = new Tone.PitchShift(5);
+            const reverb = new Tone.Freeverb();
+            // 加工済みの音声を受け取る空のノードを用意
+            const effectedDest = Tone.context.createMediaStreamDestination();
+            micAudio.connect(shifter);
+            shifter.connect(reverb);
+            // リバーブを空のノードに接続
+            reverb.connect(effectedDest);
+
+            // カメラ映像取得
+            navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+                .then(stream => {
+
+                    // ストリームから音声トラックを削除
+                    const oldTrack = stream.getAudioTracks()[0];
+                    stream.removeTrack(oldTrack);
+
+                    // ストリームにエフェクトがかかった音声トラックを追加
+                    const effectedTrack = effectedDest.stream.getAudioTracks()[0];
+                    stream.addTrack(effectedTrack);
+
+                    // 成功時にvideo要素にカメラ映像をセットし、再生
+                    const videoElm = document.getElementById('my-video')
+                    videoElm.srcObject = stream;
+                    videoElm.play();
+                    // 着信時に相手にカメラ映像を返せるように、グローバル変数に保存しておく
+                    localStream = stream;
+                }).catch(error => {
+                    // 失敗時にはエラーログを出力
+                    console.error('mediaDevice.getUserMedia() error:', error);
+                    return;
+                });
+        });
 
         const peer = new Peer({
             key: 'efe25329-57fe-45a1-84c7-5ef000f00500',
@@ -69,75 +91,120 @@
             setEventListener(mediaConnection);
         });
 
-    // let localStream;
+        // カメラ映像取得
+        // navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+        //     .then(stream => {
+        //         // 成功時にvideo要素にカメラ映像をセットし、再生
+        //         const videoElm = document.getElementById('my-video')
+        //         videoElm.srcObject = stream;
+        //         videoElm.play();
+        //         // 着信時に相手にカメラ映像を返せるように、グローバル変数に保存しておく
+        //         localStream = stream;
+        //     }).catch(error => {
+        //         // 失敗時にはエラーログを出力
+        //         console.error('mediaDevice.getUserMedia() error:', error);
+        //         return;
+        //     });
 
-    // const micAudio = new Tone.UserMedia();
-    // // マイクがオープンしたときのコールバック関数にgetUserMediaを格納
-    // micAudio.open().then(() => {
-    // const shifter = new Tone.PitchShift(5);
-    // const reverb = new Tone.Freeverb();
-    // // 加工済みの音声を受け取る空のノードを用意
-    // const effectedDest = Tone.context.createMediaStreamDestination();
-    // micAudio.connect(shifter);
-    // shifter.connect(reverb);
-    // // リバーブを空のノードに接続
-    // reverb.connect(effectedDest);
+        // const peer = new Peer({
+        //     key: 'efe25329-57fe-45a1-84c7-5ef000f00500',
+        //     debug: 3
+        // });
 
-    // // カメラ映像取得
-    // navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-    // .then(stream => {
+        // peer.on('open', () => {
+        //     document.getElementById('my-id').textContent = peer.id;
+        // });
 
-    // // ストリームから音声トラックを削除
-    // const oldTrack = stream.getAudioTracks()[0];
-    // stream.removeTrack(oldTrack);
+        // // 発信処理
+        // document.getElementById('make-call').onclick = () => {
+        //     const theirID = document.getElementById('their-id').value;
+        //     const mediaConnection = peer.call(theirID, localStream);
+        //     setEventListener(mediaConnection);
+        // };
 
-    // // ストリームにエフェクトがかかった音声トラックを追加
-    // const effectedTrack = effectedDest.stream.getAudioTracks()[0];
-    // stream.addTrack(effectedTrack);
+        // // イベントリスナを設置する関数
+        // const setEventListener = mediaConnection => {
+        //     mediaConnection.on('stream', stream => {
+        //         // video要素にカメラ映像をセットして再生
+        //         const videoElm = document.getElementById('their-video')
+        //         videoElm.srcObject = stream;
+        //         videoElm.play();
+        //     });
+        // }
+        // peer.on('call', mediaConnection => {
+        //     mediaConnection.answer(localStream);
+        //     setEventListener(mediaConnection);
+        // });
 
-    // // 成功時にvideo要素にカメラ映像をセットし、再生
-    // const videoElm = document.getElementById('my-video')
-    // videoElm.srcObject = stream;
-    // videoElm.play();
-    // // 着信時に相手にカメラ映像を返せるように、グローバル変数に保存しておく
-    // localStream = stream;
-    // }).catch(error => {
-    // // 失敗時にはエラーログを出力
-    // console.error('mediaDevice.getUserMedia() error:', error);
-    // return;
-    // });
-    // });
+        // let localStream;
 
-    // const peer = new Peer({
-    // key: 'efe25329-57fe-45a1-84c7-5ef000f00500',
-    // debug: 3
-    // });
+        // const micAudio = new Tone.UserMedia();
+        // // マイクがオープンしたときのコールバック関数にgetUserMediaを格納
+        // micAudio.open().then(() => {
+        //     const shifter = new Tone.PitchShift(5);
+        //     const reverb = new Tone.Freeverb();
+        //     // 加工済みの音声を受け取る空のノードを用意
+        //     const effectedDest = Tone.context.createMediaStreamDestination();
+        //     micAudio.connect(shifter);
+        //     shifter.connect(reverb);
+        //     // リバーブを空のノードに接続
+        //     reverb.connect(effectedDest);
 
-    // peer.on('open', () => {
-    // document.getElementById('my-id').textContent = peer.id;
-    // });
+        //     // カメラ映像取得
+        //     navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+        //         .then(stream => {
 
-    // // 発信処理
-    // document.getElementById('make-call').onclick = () => {
-    // const theirID = document.getElementById('their-id').value;
-    // const mediaConnection = peer.call(theirID, localStream);
-    // setEventListener(mediaConnection);
-    // };
+        //             // ストリームから音声トラックを削除
+        //             const oldTrack = stream.getAudioTracks()[0];
+        //             stream.removeTrack(oldTrack);
 
-    // // イベントリスナを設置する関数
-    // const setEventListener = mediaConnection => {
-    // mediaConnection.on('stream', stream => {
-    // // video要素にカメラ映像をセットして再生
-    // const videoElm = document.getElementById('their-video')
-    // videoElm.srcObject = stream;
-    // videoElm.play();
-    // });
-    // }
+        //             // ストリームにエフェクトがかかった音声トラックを追加
+        //             const effectedTrack = effectedDest.stream.getAudioTracks()[0];
+        //             stream.addTrack(effectedTrack);
 
-    // peer.on('call', mediaConnection => {
-    // mediaConnection.answer(localStream);
-    // setEventListener(mediaConnection);
-    // });
+        //             // 成功時にvideo要素にカメラ映像をセットし、再生
+        //             const videoElm = document.getElementById('my-video')
+        //             videoElm.srcObject = stream;
+        //             videoElm.play();
+        //             // 着信時に相手にカメラ映像を返せるように、グローバル変数に保存しておく
+        //             localStream = stream;
+        //         }).catch(error => {
+        //             // 失敗時にはエラーログを出力
+        //             console.error('mediaDevice.getUserMedia() error:', error);
+        //             return;
+        //         });
+        // });
+
+        // const peer = new Peer({
+        //     key: 'efe25329-57fe-45a1-84c7-5ef000f00500',
+        //     debug: 3
+        // });
+
+        // peer.on('open', () => {
+        //     document.getElementById('my-id').textContent = peer.id;
+        // });
+
+        // // 発信処理
+        // document.getElementById('make-call').onclick = () => {
+        //     const theirID = document.getElementById('their-id').value;
+        //     const mediaConnection = peer.call(theirID, localStream);
+        //     setEventListener(mediaConnection);
+        // };
+
+        // // イベントリスナを設置する関数
+        // const setEventListener = mediaConnection => {
+        //     mediaConnection.on('stream', stream => {
+        //         // video要素にカメラ映像をセットして再生
+        //         const videoElm = document.getElementById('their-video')
+        //         videoElm.srcObject = stream;
+        //         videoElm.play();
+        //     });
+        // }
+
+        // peer.on('call', mediaConnection => {
+        //     mediaConnection.answer(localStream);
+        //     setEventListener(mediaConnection);
+        // });
 
     </script>
 </body>
